@@ -12,12 +12,18 @@ export default async function handler(req, res) {
     const fetchRes = await fetch(apiUrl);
     const data = await fetchRes.json();
 
-    // ✅ 응답 경량화: 필요한 일부만 추출
-    if (data?.response?.body?.total_media) {
-      data.response.body.total_media = data.response.body.total_media.slice(0, 1);
-    }
+    // ✅ 법령 카테고리만 필터링 + 중요도 순 정렬 + 상위 10개만
+    const lawCategories = ['1', '2', '3', '4', '5', '8', '9', '11'];
     if (data?.response?.body?.items?.item) {
-      data.response.body.items.item = data.response.body.items.item.slice(0, 1);
+      data.response.body.items.item = data.response.body.items.item
+        .filter(item => lawCategories.includes(item.category))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+    }
+
+    // ❌ 미디어자료는 제외
+    if (data?.response?.body?.total_media) {
+      delete data.response.body.total_media;
     }
 
     res.status(200).json(data);
