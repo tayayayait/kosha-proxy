@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       data.response.body.items.item = data.response.body.items.item
         .filter(item => lawCategories.includes(item.category))
         .sort((a, b) => b.score - a.score)
-        .slice(0, 30);
+        .slice(0, 50);
     }
 
     // ❌ 미디어자료는 제외
