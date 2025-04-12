@@ -1,15 +1,12 @@
 export default async function handler(req, res) {
-const searchValue = searchParams.get("searchValue");
-const pageNo = searchParams.get("pageNo") || "1";
-const numOfRows = searchParams.get("numOfRows") || "5";
-const category = searchParams.get("category");
-const lightMode = searchParams.get("lightMode") || "true";
+  const { searchParams } = new URL(req.url, http://${req.headers.host});
+  const serviceKey = searchParams.get("serviceKey");
+  const pageNo = searchParams.get("pageNo");
+  const numOfRows = searchParams.get("numOfRows");
+  const searchValue = searchParams.get("searchValue");
+  const category = searchParams.get("category");
 
-if (!searchValue || searchValue.length < 2) {
-  return res.status(400).json({ error: '검색어를 구체적으로 입력해주세요.' });
-}
-
-const apiUrl = `https://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${serviceKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&searchValue=${encodeURIComponent(searchValue)}&category=${category}&lightMode=${lightMode}`;
+  const apiUrl = http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${serviceKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&searchValue=${encodeURIComponent(searchValue)}&category=${category};
 
   try {
     const fetchRes = await fetch(apiUrl);
@@ -34,4 +31,3 @@ const apiUrl = `https://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${se
     res.status(500).json({ error: 'API 호출 실패', details: error.message });
   }
 }
-
