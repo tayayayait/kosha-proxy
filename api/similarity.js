@@ -16,9 +16,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "'documents'는 최소 1개 이상의 문서가 포함된 배열이어야 합니다." });
     }
 
-    // ✅ 샘플 유사도 점수 부여 및 라벨링 (실제 유사도 계산 로직으로 교체 가능)
+    // ✅ 유사도 점수 계산 및 라벨링
     const rankedDocuments = documents.map((doc) => {
-      const score = Math.random(); // 🎯 실제는 cosine similarity 등으로 대체
+      const score = Math.random(); // 🎯 실제 cosine similarity 로 대체 가능
       const similarityScore = parseFloat(score.toFixed(3));
 
       let relevanceLabel = '낮음';
@@ -29,19 +29,27 @@ export default async function handler(req, res) {
         doc_id: doc.doc_id || '',
         title: doc.title || '',
         similarityScore,
+        legalPriorityLevel: doc.score || 0, // ⚠️ 원본 문서의 score 사용
         relevanceLabel
       };
     });
 
-    // ✅ 점수 기준 정렬
-    rankedDocuments.sort((a, b) => b.similarityScore - a.similarityScore);
+    // ✅ 필터링: similarity ≥ 0.70 AND 중요도 ≥ 3점
+    const filteredDocuments = rankedDocuments.filter(doc => 
+      doc.similarityScore >= 0.7 && doc.legalPriorityLevel >= 3
+    );
 
-    // ✅ 응답 반환
-    res.status(200).json({ rankedDocuments });
+    // ✅ 정렬
+    filteredDocuments.sort((a, b) => 
+      (b.similarityScore * 0.6 + b.legalPriorityLevel * 0.4) -
+      (a.similarityScore * 0.6 + a.legalPriorityLevel * 0.4)
+    );
+
+    // ✅ 응답
+    res.status(200).json({ rankedDocuments: filteredDocuments });
 
   } catch (error) {
     console.error('🔥 /api/similarity 오류:', error);
     res.status(500).json({ error: '서버 내부 오류', details: error.message });
   }
 }
-
