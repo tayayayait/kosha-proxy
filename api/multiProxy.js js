@@ -1,0 +1,63 @@
+export default async function handler(req, res) {
+  try {
+    const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
+    const serviceKey = searchParams.get("serviceKey");
+    const category = searchParams.get("category");
+    const searchValues = searchParams.getAll("searchValue"); // ✅ 여러 개 받을 수 있음
+
+    const results = [];
+
+    for (const searchValue of searchValues) {
+      const apiUrl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${serviceKey}&pageNo=1&numOfRows=5&searchValue=${encodeURIComponent(searchValue)}&category=${category}`;
+
+      const fetchRes = await fetch(apiUrl);
+
+      if (!fetchRes.ok) {
+        results.push({
+          keyword: searchValue,
+          error: `API 호출 실패 (${fetchRes.status})`
+        });
+        continue;
+      }
+
+      const data = await fetchRes.json();
+      let items = data?.response?.body?.items?.item || [];
+
+      // ✅ 필터링 및 정제 로직
+      const isCategory3 = category === '3';
+      const lawCategories = ['1', '2', '3', '4', '5', '8', '9', '11'];
+      items = items.filter(item => lawCategories.includes(String(item.category)));
+
+      if (isCategory3) {
+        items = items
+          .filter(item =>
+            item.title.match(/^제\d+조/) &&
+            !item.title.includes("서식") &&
+            !item.title.includes("별표")
+          )
+          .map(item => ({
+            doc_id: item.doc_id,
+            title: item.title,
+            highlight_content: item.highlight_content?.split('\n')[0] || '',
+            score: item.score,
+            legalHit: item.legalHit,
+            keyword: item.keyword,
+            category: item.category
+          }));
+      } else {
+        items = items.sort((a, b) => b.score - a.score).slice(0, 20);
+      }
+
+      results.push({
+        keyword: searchValue,
+        totalCount: data.response.body.totalCount,
+        items
+      });
+    }
+
+    res.status(200).json({ results });
+  } catch (error) {
+    console.error("🔥 multiProxy 오류:", error);
+    res.status(500).json({ error: 'multiProxy 호출 실패', details: error.message });
+  }
+}
