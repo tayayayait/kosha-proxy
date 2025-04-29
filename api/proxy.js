@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const apiUrl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${serviceKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&searchValue=${encodeURIComponent(searchValue)}&category=${category}`;
 
     const fetchRes = await fetch(apiUrl);
-    
+
     if (!fetchRes.ok) {
       const errorText = await fetchRes.text();
       throw new Error(`원본 API 호출 실패: ${fetchRes.status} - ${errorText}`);
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         items = items
           .filter(item =>
             item.title.match(/^제\d+조/) &&
-            !item.title.includes("서식") // "별표" 제외 조건 삭제
+            !item.title.includes("서식")
           )
           .map(item => ({
             doc_id: item.doc_id,
