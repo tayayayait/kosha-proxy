@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     const apiUrl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${serviceKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&searchValue=${encodeURIComponent(searchValue)}&category=${category}`;
 
     const fetchRes = await fetch(apiUrl);
-
+    
     if (!fetchRes.ok) {
       const errorText = await fetchRes.text();
       throw new Error(`원본 API 호출 실패: ${fetchRes.status} - ${errorText}`);
@@ -20,14 +20,32 @@ export default async function handler(req, res) {
 
     const data = await fetchRes.json();
 
+    const isCategory3 = category === '3';
+
     if (data?.response?.body?.items?.item) {
       let items = data.response.body.items.item;
 
       const lawCategories = ['1', '2', '3', '4', '5', '8', '9', '11'];
       items = items.filter(item => lawCategories.includes(String(item.category)));
 
-      // ✅ 카테고리 상관없이 중요도 순 상위 20개만 남김
-      items = items.sort((a, b) => b.score - a.score).slice(0, 20);
+      if (isCategory3) {
+        items = items
+          .filter(item =>
+            item.title.match(/^제\d+조/) &&
+            !item.title.includes("서식") // "별표" 제외 조건 삭제
+          )
+          .map(item => ({
+            doc_id: item.doc_id,
+            title: item.title,
+            highlight_content: item.highlight_content?.split('\n')[0] || '',
+            score: item.score,
+            legalHit: item.legalHit,
+            keyword: item.keyword,
+            category: item.category
+          }));
+      } else {
+        items = items.sort((a, b) => b.score - a.score).slice(0, 20);
+      }
 
       data.response.body.items.item = items;
     }
